@@ -1,0 +1,8 @@
+/* Logged out */
+
+position: relative;
+width: 375px;
+height: 812px;
+
+background: linear-gradient(180deg, #00D1FF 71%, #007D99 100%);
+background-blend-mode: hard-light;
