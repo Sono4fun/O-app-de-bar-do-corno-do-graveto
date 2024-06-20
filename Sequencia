@@ -1,0 +1,14 @@
+import 'package:flutter/material.dart';
+
+class ProductProvider with ChangeNotifier {
+  int _nextId = 1;
+  final List<Product> _products = [];
+
+  List<Product> get products => _products;
+
+  void addProduct(String name, double price, String category) {
+    final product = Product(id: _nextId++, name: name, price: price, category: category);
+    _products.add(product);
+    notifyListeners();
+  }
+}
