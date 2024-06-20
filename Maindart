@@ -1,0 +1,255 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+void main() {
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => ProductProvider(),
+      child: MyApp(),
+    ),
+  );
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Gerenciador de Estoque',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => HomeScreen(),
+        '/stock': (context) => StockScreen(),
+        '/add_product': (context) => AddProductScreen(),
+      },
+    );
+  }
+}
+
+class Product {
+  final int id;
+  String name;
+  double price;
+  String category;
+
+  Product({required this.id, required this.name, required this.price, required this.category});
+}
+
+class ProductProvider with ChangeNotifier {
+  int _nextId = 1;
+  final List<Product> _products = [];
+
+  List<Product> get products => _products;
+
+  void addProduct(String name, double price, String category) {
+    final product = Product(id: _nextId++, name: name, price: price, category: category);
+    _products.add(product);
+    notifyListeners();
+  }
+
+  void removeProduct(int id) {
+    _products.removeWhere((product) => product.id == id);
+    notifyListeners();
+  }
+}
+
+class HomeScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        children: [
+          Container(
+            width: 375,
+            height: 812,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment(0.25, 0),
+                end: Alignment(0.75, 0),
+                colors: [
+                  Color(0xFF00D1FF),
+                  Color(0xFF007D99),
+                ],
+                stops: [0.71, 1],
+              ),
+            ),
+          ),
+          Center(
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/stock');
+              },
+              child: Text('Ir para o Estoque'),
+            ),
+          ),
+          Positioned(
+            left: 16,
+            top: 312,
+            child: Container(
+              width: 343,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: () {
+                  // Ação do botão
+                },
+                child: Text('vtmnc'),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class StockScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Estoque'),
+      ),
+      body: Consumer<ProductProvider>(
+        builder: (context, provider, child) {
+          return ListView.builder(
+            itemCount: provider.products.length,
+            itemBuilder: (context, index) {
+              final product = provider.products[index];
+              return Dismissible(
+                key: Key(product.id.toString()),
+                onDismissed: (direction) {
+                  provider.removeProduct(product.id);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${product.name} prduto removido')),
+                  );
+                },
+                background: Container(
+                  color: Colors.red,
+                  alignment: Alignment.centerLeft,
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: Icon(Icons.delete, color: Colors.white),
+                ),
+                secondaryBackground: Container(
+                  color: Colors.red,
+                  alignment: Alignment.centerRight,
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: Icon(Icons.delete, color: Colors.white),
+                ),
+                child: ListTile(
+                  title: Text(product.name),
+                  subtitle: Text('ID: ${product.id}, Preço: ${product.price}, Categoria: ${product.category}'),
+                ),
+              );
+            },
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.pushNamed(context, '/add_product');
+        },
+        child: Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class AddProductScreen extends StatefulWidget {
+  @override
+  _AddProductScreenState createState() => _AddProductScreenState();
+}
+
+class _AddProductScreenState extends State<AddProductScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _priceController = TextEditingController();
+  String _category = 'Comida';
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Adicionar Produto'),
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: <Widget>[
+              TextFormField(
+                controller: _nameController,
+                decoration: InputDecoration(
+                  labelText: 'Nome',
+                  suffixIcon: IconButton(
+                    icon: Icon(Icons.edit),
+                    onPressed: () {
+                      // Lógica para editar o nome (se necessário)
+                    },
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, insira um nome';
+                  }
+                  return null;
+                },
+              ),
+              TextFormField(
+                controller: _priceController,
+                decoration: InputDecoration(
+                  labelText: 'Preço',
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, insira um preço';
+                  }
+                  return null;
+                },
+              ),
+              DropdownButtonFormField<String>(
+                value: _category,
+                items: ['Comida', 'Bebida'].map((String category) {
+                  return DropdownMenuItem<String>(
+                    value: category,
+                    child: Text(category),
+                  );
+                }).toList(),
+                onChanged: (newValue) {
+                  setState(() {
+                    _category = newValue!;
+                  });
+                },
+                decoration: InputDecoration(
+                  labelText: 'Categoria',
+                ),
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    final name = _nameController.text;
+                    final price = double.parse(_priceController.text);
+                    Provider.of<ProductProvider>(context, listen: false).addProduct(name, price, _category);
+                    Navigator.pop(context);
+                  }
+                },
+                child: Text('Adicionar Produto'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _priceController.dispose();
+    super.dispose();
+  }
+}
